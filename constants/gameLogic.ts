@@ -97,29 +97,51 @@ export const revealCell = (board: Cell[][], row: number, col: number): Cell[][] 
   return newBoard;
 };
 
-export const toggleFlag = (board: Cell[][], row: number, col: number): Cell[][] => {
-  // Validar índices primero
+export const toggleFlag = (board: Cell[][], row: number, col: number, bombsLeft: number): { newBoard: Cell[][], newBombsLeft: number } => {
+  // Validar índices
   if (row < 0 || row >= board.length || col < 0 || col >= board[0]?.length) {
-    return board;
+    return { newBoard: board, newBombsLeft: bombsLeft };
   }
 
   const newBoard = board.map(row => [...row]);
   const cell = newBoard[row][col];
 
-  if (!cell.isRevealed) {
-    cell.isFlagged = !cell.isFlagged;
+  // No permitir colocar banderas si no quedan bombas por marcar
+  if (bombsLeft <= 0 && !cell.isFlagged) {
+    return { newBoard: board, newBombsLeft: bombsLeft };
   }
 
-  return newBoard;
+  if (!cell.isRevealed) {
+    cell.isFlagged = !cell.isFlagged;
+    const bombChange = cell.isFlagged ? -1 : 1;
+    return { 
+      newBoard, 
+      newBombsLeft: Math.max(0, bombsLeft + bombChange) // Nunca menor que 0
+    };
+  }
+
+  return { newBoard, newBombsLeft: bombsLeft };
 };
 
 export const checkWinCondition = (board: Cell[][]): boolean => {
-  return board.every(row => 
+  // Verificar dos condiciones:
+  // 1. Todas las celdas no bombas están reveladas
+  // 2. Todas las bombas están marcadas con banderas
+  const allNonBombsRevealed = board.every(row => 
     row.every(cell => 
       cell.isBomb || cell.isRevealed
     )
   );
+  
+  const allBombsFlagged = board.every(row =>
+    row.every(cell =>
+      !cell.isBomb || cell.isFlagged
+    )
+  );
+
+  return allNonBombsRevealed && allBombsFlagged;
 };
+
 
 export const getGameConfig = (mode: GameMode, customConfig?: Partial<GameConfig>): GameConfig => {
   switch (mode) {

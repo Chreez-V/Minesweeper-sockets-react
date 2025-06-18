@@ -22,4 +22,14 @@ export interface GameState {
   gameWon: boolean;
   bombsLeft: number;
   moves: number;
+  onback: () => void;
 }
+
+export interface GameStatusProps {
+  bombsLeft: number;
+  moves: number;
+  gameOver: boolean;
+  gameWon: boolean;
+  onBack: () => void;
+}
+

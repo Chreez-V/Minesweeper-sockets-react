@@ -32,118 +32,124 @@ const GameScreen: React.FC<GameScreenProps> = ({ gameConfig, onBack }) => {
     }
   }, [gameState.gameOver, gameState.gameWon]);
 
-  const handleCommand = () => {
-    if (!command.trim()) return;
+const handleCommand = () => {
+  if (gameState.gameOver || gameState.gameWon) return;
 
-    const parts = command.trim().toLowerCase().split(' ');
-    const action = parts[0];
-    const coords = parts[1]?.split(',');
+  const parts = command.trim().toLowerCase().split(' ');
+  const action = parts[0];
+  const coords = parts[1]?.split(',');
 
-    if (action === 'help') {
-      setShowHelp(!showHelp);
-      setCommand('');
-      return;
-    }
-
-    if (action === 'exit') {
-      onBack();
-      return;
-    }
-
-    if (!coords || coords.length !== 2) {
-      Alert.alert('Error', 'Formato incorrecto. Usa: [acción] [fila,columna]');
-      setCommand('');
-      return;
-    }
-
-    const row = parseInt(coords[0]);
-    const col = parseInt(coords[1]);
-
-    if (isNaN(row) || isNaN(col) || 
-        row < 0 || row >= gameConfig.rows || 
-        col < 0 || col >= gameConfig.cols) {
-      Alert.alert('Error', 'Coordenadas inválidas');
-      setCommand('');
-      return;
-    }
-
-    if (gameState.gameOver || gameState.gameWon) return;
-
-    let newBoard = [...board];
-    let newBombsLeft = gameState.bombsLeft;
-    let newMoves = gameState.moves + 1;
-
-    if (action === 'r' || action === 'reveal') {
-      newBoard = revealCell(board, row, col);
-      
-      if (board[row][col].isBomb) {
-        setGameState({ ...gameState, gameOver: true, moves: newMoves });
-      } else if (checkWinCondition(newBoard)) {
-        setGameState({ ...gameState, gameWon: true, moves: newMoves });
-      }
-    } 
-    else if (action === 'f' || action === 'flag') {
-      newBoard = toggleFlag(board, row, col);
-      const cell = newBoard[row][col];
-      newBombsLeft += cell.isFlagged ? -1 : 1;
-    } 
-    else {
-      Alert.alert('Error', 'Acción desconocida. Usa "reveal" o "flag"');
-      setCommand('');
-      return;
-    }
-
-    setBoard(newBoard);
-    setGameState({
-      ...gameState,
-      bombsLeft: newBombsLeft,
-      moves: newMoves,
-    });
+  // Comandos especiales
+  if (action === 'help') {
+    setShowHelp(!showHelp);
     setCommand('');
-  };
+    return;
+  }
+
+  if (action === 'exit') {
+    onBack();
+    return;
+  }
+
+  // Validar comandos de juego
+  if (!coords || coords.length !== 2) {
+    Alert.alert('Error', 'Formato incorrecto. Usa: [acción] [fila,columna]');
+    setCommand('');
+    return;
+  }
+
+  const row = parseInt(coords[0]);
+  const col = parseInt(coords[1]);
+
+  if (isNaN(row) || isNaN(col) || 
+      row < 0 || row >= gameConfig.rows || 
+      col < 0 || col >= gameConfig.cols) {
+    Alert.alert('Error', 'Coordenadas inválidas');
+    setCommand('');
+    return;
+  }
+
+  let newBoard = [...board];
+  let newBombsLeft = gameState.bombsLeft;
+  let newGameOver = gameState.gameOver;
+  let newGameWon = gameState.gameWon;
+  let newGameState = { ...gameState }; // Creamos copia del estado
+
+  if (action === 'r' || action === 'reveal') {
+    newBoard = revealCell(board, row, col);
+    
+    if (board[row][col].isBomb) {
+      newGameState = { ...newGameState, gameOver: true };
+    }
+  } 
+  else if (action === 'f' || action === 'flag') {
+    const result = toggleFlag(board, row, col, gameState.bombsLeft);
+    newBoard = result.newBoard;
+    newBombsLeft = result.newBombsLeft;
+  }
+
+  else {
+    Alert.alert('Error', 'Acción desconocida. Usa "reveal" o "flag"');
+    setCommand('');
+    return;
+  }
+
+  // Verificar condición de victoria
+  const isGameWon = checkWinCondition(newBoard);
+
+  // Actualizar estado
+  setBoard(newBoard);
+  setGameState({
+    ...newGameState,
+    bombsLeft: newBombsLeft,
+    moves: gameState.moves + 1,
+    gameWon: isGameWon
+  });
+
+  setCommand('');
+
+  // Mostrar mensaje de victoria
+  if (newGameWon) {
+    Alert.alert(
+      '¡Ganaste!', 
+      `Completaste el juego en ${gameState.moves + 1} movimientos`,
+      [{ text: 'OK', onPress: onBack }]
+    );
+  }
+};
 
   return (
-    <View style={styles.container}>
-      <GameStatus 
-        bombsLeft={gameState.bombsLeft} 
-        moves={gameState.moves} 
-        onBack={onBack} 
-      />
-      
-      <GameBoard 
-        board={board} 
-        gameOver={gameState.gameOver} 
-        gameWon={gameState.gameWon} 
-      />
-      
+
+
+  <View style={styles.container}>
+    <GameStatus 
+      bombsLeft={gameState.bombsLeft} 
+      moves={gameState.moves}
+      gameOver={gameState.gameOver}
+      gameWon={gameState.gameWon}
+      onBack={onBack} 
+    />
+    
+    <GameBoard 
+      board={board} 
+      gameOver={gameState.gameOver} 
+      gameWon={gameState.gameWon} 
+    />
+    
+    {!gameState.gameOver && !gameState.gameWon && (
       <View style={styles.commandContainer}>
-        <Text style={styles.label}>Comando:</Text>
         <TextInput
           style={styles.input}
           value={command}
           onChangeText={setCommand}
           onSubmitEditing={handleCommand}
           placeholder="Ej: reveal 5,4 o flag 3,2"
-          placeholderTextColor="#555"
-          autoCapitalize="none"
-          autoCorrect={false}
-          selectionColor="#0f0"
+          editable={!gameState.gameOver && !gameState.gameWon}
         />
-        <TouchableOpacity style={styles.helpButton} onPress={() => setShowHelp(!showHelp)}>
-          <Text style={styles.helpButtonText}>?</Text>
-        </TouchableOpacity>
       </View>
-      
-      {showHelp && (
-        <View style={styles.helpContainer}>
-          <Text style={styles.helpText}>COMANDOS DISPONIBLES:</Text>
-          <Text style={styles.helpText}>- reveal 5,4 (o r 5,4): Revela la celda en fila 5, columna 4</Text>
-          <Text style={styles.helpText}>- flag 3,2 (o f 3,2): Pone/quita bandera en fila 3, columna 2</Text>
-          <Text style={styles.helpText}>- help: Muestra/oculta esta ayuda</Text>
-          <Text style={styles.helpText}>- exit: Volver al menú principal</Text>
-        </View>
-      )}
-    </View>
+    )}
+  </View>      
+
   );
 };
 
