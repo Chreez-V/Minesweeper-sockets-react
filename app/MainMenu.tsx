@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
-import { GameMode } from '../../constants/gameType';
+import { GameMode } from '@/constants/gameType';
 import GameScreen from './GameScreen';
-import { getGameConfig } from '../../constants/gameLogic';
+import { getGameConfig } from '@/constants/gameLogic';
 
 const MainMenu = () => {
   const [gameMode, setGameMode] = useState<GameMode | null>(null);

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { GameConfig } from '../../constants/gameType';
-import { createBoard, revealCell, toggleFlag, checkWinCondition } from '../../constants/gameLogic';
-import GameBoard from '../../components/GameBoard';
-import GameStatus from '../../components/GameStatus';
+import { GameConfig } from '@/constants/gameType';
+import { createBoard, revealCell, toggleFlag, checkWinCondition } from '@/constants/gameLogic';
+import GameBoard from '@/components/GameBoard';
+import GameStatus from '@/components/GameStatus';
 
 interface GameScreenProps {
   gameConfig: GameConfig;
