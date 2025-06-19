@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, ScrollView } from 'react-native';
 import { GameMode } from '@/constants/gameType';
 import GameScreen from './GameScreen';
 import { getGameConfig } from '@/constants/gameLogic';
@@ -22,6 +22,7 @@ const MainMenu = () => {
   }
 
   return (
+    <ScrollView>
     <View style={styles.container}>
       <Text style={styles.title}>BUSCAMINAS RETRO</Text>
       
@@ -51,9 +52,7 @@ const MainMenu = () => {
         
         <View style={styles.inputRow}>
           <Text style={styles.label}>Filas:</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
+          <TextInput style={styles.input} keyboardType="numeric"
             value={customConfig.rows.toString()}
             onChangeText={(text) => setCustomConfig({...customConfig, rows: parseInt(text) || 10})}
           />
@@ -86,7 +85,12 @@ const MainMenu = () => {
           <Text style={styles.buttonText}>JUGAR PERSONALIZADO</Text>
         </TouchableOpacity>
       </View>
+      <View style={styles.creditsContainer}>
+        <Text style={styles.sectionTitle}>CREDITOS</Text> 
+        <Text>Sistemas de Operaciones</Text>
+      </View>
     </View>
+    </ScrollView>
   );
 };
 
@@ -124,6 +128,9 @@ const styles = StyleSheet.create({
     borderTopColor: '#0f0',
     paddingTop: 20,
   },
+  creditsContainer:{
+  marginTop:30,
+    },
   sectionTitle: {
     color: '#0f0',
     fontSize: 18,

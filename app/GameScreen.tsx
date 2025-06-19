@@ -122,6 +122,18 @@ const handleCommand = () => {
 
 
   <View style={styles.container}>
+      {!gameState.gameOver && !gameState.gameWon && (
+        <View style={styles.commandContainer}>
+          <TextInput
+            style={styles.input}
+            value={command}
+            onChangeText={setCommand}
+            onSubmitEditing={handleCommand}
+            placeholder="Ej: reveal 5,4 o flag 3,2"
+            editable={!gameState.gameOver && !gameState.gameWon}
+          />
+        </View>
+      )}
     <GameStatus 
       bombsLeft={gameState.bombsLeft} 
       moves={gameState.moves}
@@ -136,18 +148,6 @@ const handleCommand = () => {
       gameWon={gameState.gameWon} 
     />
     
-    {!gameState.gameOver && !gameState.gameWon && (
-      <View style={styles.commandContainer}>
-        <TextInput
-          style={styles.input}
-          value={command}
-          onChangeText={setCommand}
-          onSubmitEditing={handleCommand}
-          placeholder="Ej: reveal 5,4 o flag 3,2"
-          editable={!gameState.gameOver && !gameState.gameWon}
-        />
-      </View>
-    )}
   </View>      
 
   );
