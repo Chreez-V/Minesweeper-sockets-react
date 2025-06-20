@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet,ScrollView } from 'react-native';
 import { Cell } from '../constants/gameType';
 import { Colors } from '../constants/Colors';
 
@@ -25,7 +25,12 @@ const GameBoard: React.FC<GameBoardProps> = ({ board, gameOver, gameWon }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView 
+      horizontal={true} // Habilita scroll horizontal
+      contentContainerStyle={styles.horizontalScroll}
+      showsHorizontalScrollIndicator={true}
+    > 
+      <View style={styles.container}>
       <View style={styles.rowNumbers}>
         {board[0]?.map((_, col) => (
           <Text key={`col-${col}`} style={styles.coordinateText}>
@@ -54,10 +59,14 @@ const GameBoard: React.FC<GameBoardProps> = ({ board, gameOver, gameWon }) => {
         </View>
       ))}
     </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
+    horizontalScroll: {
+    paddingVertical: 10,
+  },
   container: {
     marginVertical: 10,
   },

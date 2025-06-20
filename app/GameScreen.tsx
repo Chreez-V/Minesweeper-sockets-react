@@ -134,6 +134,7 @@ const handleCommand = () => {
           />
         </View>
       )}
+
     <GameStatus 
       bombsLeft={gameState.bombsLeft} 
       moves={gameState.moves}
@@ -142,11 +143,13 @@ const handleCommand = () => {
       onBack={onBack} 
     />
     
+    <View style={styles.boardContainer}>
     <GameBoard 
       board={board} 
       gameOver={gameState.gameOver} 
       gameWon={gameState.gameWon} 
     />
+    </View>
     
   </View>      
 
@@ -158,6 +161,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
     padding: 10,
+  },
+    boardContainer: {
+    flex: 1, // Esto hace que el tablero ocupe todo el espacio disponible
+    marginVertical: 10,
   },
   commandContainer: {
     flexDirection: 'row',
