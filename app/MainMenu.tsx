@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, ScrollView } from 'react-native';
-import { GameMode } from '@/constants/gameType';
-import GameScreen from './GameScreen';
+// App/MainMenu.tsx
 import { getGameConfig } from '@/constants/gameLogic';
+import { GameMode } from '@/constants/gameType';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import GameScreen from './GameScreen';
 
-const MainMenu = () => {
+// Define the props interface for MainMenu
+interface MainMenuProps {
+  onBack: () => void;
+}
+
+// Update the MainMenu component to accept MainMenuProps
+const MainMenu: React.FC<MainMenuProps> = ({ onBack }) => {
   const [gameMode, setGameMode] = useState<GameMode | null>(null);
   const [customConfig, setCustomConfig] = useState({
     rows: 10,
@@ -14,82 +21,82 @@ const MainMenu = () => {
 
   if (gameMode) {
     return (
-      <GameScreen 
-        gameConfig={getGameConfig(gameMode, customConfig)} 
-        onBack={() => setGameMode(null)} 
+      <GameScreen
+        gameConfig={getGameConfig(gameMode, customConfig)}
+        onBack={() => setGameMode(null)}
       />
     );
   }
 
   return (
     <ScrollView>
-    <View style={styles.container}>
-      <Text style={styles.title}>BUSCAMINAS RETRO</Text>
-      
-      <TouchableOpacity 
-        style={styles.button} 
-        onPress={() => setGameMode('easy')}
-      >
-        <Text style={styles.buttonText}>FÁCIL (8x8, 10 bombas)</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={styles.button} 
-        onPress={() => setGameMode('medium')}
-      >
-        <Text style={styles.buttonText}>MEDIO (16x16, 40 bombas)</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={styles.button} 
-        onPress={() => setGameMode('hard')}
-      >
-        <Text style={styles.buttonText}>DIFÍCIL (16x30, 99 bombas)</Text>
-      </TouchableOpacity>
-      
-      <View style={styles.customContainer}>
-        <Text style={styles.sectionTitle}>PERSONALIZADO</Text>
-        
-        <View style={styles.inputRow}>
-          <Text style={styles.label}>Filas:</Text>
-          <TextInput style={styles.input} keyboardType="numeric"
-            value={customConfig.rows.toString()}
-            onChangeText={(text) => setCustomConfig({...customConfig, rows: parseInt(text) || 10})}
-          />
-        </View>
-        
-        <View style={styles.inputRow}>
-          <Text style={styles.label}>Columnas:</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            value={customConfig.cols.toString()}
-            onChangeText={(text) => setCustomConfig({...customConfig, cols: parseInt(text) || 10})}
-          />
-        </View>
-        
-        <View style={styles.inputRow}>
-          <Text style={styles.label}>Bombas:</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            value={customConfig.bombs.toString()}
-            onChangeText={(text) => setCustomConfig({...customConfig, bombs: parseInt(text) || 20})}
-          />
-        </View>
-        
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={() => setGameMode('custom')}
+      <View style={styles.container}>
+        <Text style={styles.title}>BUSCAMINAS RETRO</Text>
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => setGameMode('easy')}
         >
-          <Text style={styles.buttonText}>JUGAR PERSONALIZADO</Text>
+          <Text style={styles.buttonText}>FÁCIL (8x8, 10 bombas)</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => setGameMode('medium')}
+        >
+          <Text style={styles.buttonText}>MEDIO (16x16, 40 bombas)</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => setGameMode('hard')}
+        >
+          <Text style={styles.buttonText}>DIFÍCIL (16x30, 99 bombas)</Text>
+        </TouchableOpacity>
+
+        <View style={styles.customContainer}>
+          <Text style={styles.sectionTitle}>PERSONALIZADO</Text>
+
+          <View style={styles.inputRow}>
+            <Text style={styles.label}>Filas:</Text>
+            <TextInput style={styles.input} keyboardType="numeric"
+              value={customConfig.rows.toString()}
+              onChangeText={(text) => setCustomConfig({ ...customConfig, rows: parseInt(text) || 10 })}
+            />
+          </View>
+
+          <View style={styles.inputRow}>
+            <Text style={styles.label}>Columnas:</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              value={customConfig.cols.toString()}
+              onChangeText={(text) => setCustomConfig({ ...customConfig, cols: parseInt(text) || 10 })}
+            />
+          </View>
+
+          <View style={styles.inputRow}>
+            <Text style={styles.label}>Bombas:</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              value={customConfig.bombs.toString()}
+              onChangeText={(text) => setCustomConfig({ ...customConfig, bombs: parseInt(text) || 20 })}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => setGameMode('custom')}
+          >
+            <Text style={styles.buttonText}>JUGAR PERSONALIZADO</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.creditsContainer}>
+          <Text style={styles.sectionTitle}>CREDITOS</Text>
+          <Text>Sistemas de Operaciones</Text>
+        </View>
       </View>
-      <View style={styles.creditsContainer}>
-        <Text style={styles.sectionTitle}>CREDITOS</Text> 
-        <Text>Sistemas de Operaciones</Text>
-      </View>
-    </View>
     </ScrollView>
   );
 };
@@ -128,9 +135,9 @@ const styles = StyleSheet.create({
     borderTopColor: '#0f0',
     paddingTop: 20,
   },
-  creditsContainer:{
-  marginTop:30,
-    },
+  creditsContainer: {
+    marginTop: 30,
+  },
   sectionTitle: {
     color: '#0f0',
     fontSize: 18,
