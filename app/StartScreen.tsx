@@ -1,38 +1,54 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MainMenu from './MainMenu';
+import MultiplayerMenu from './MultiplayerMenu';
 
 interface StartScreenProps {
-  onBack?: () => void; // Hacerla opcional con el ?
+  onBack?: () => void;
 }
-
 
 const StartScreen: React.FC<StartScreenProps> = ({ onBack = () => {} }) => {
   const [gameMode, setGameMode] = useState<'single' | 'multi' | null>(null);
 
   if (gameMode === 'single') {
-    return <MainMenu onBack={() => {
-      setGameMode(null);
-      onBack(); // Llama a onBack si existe
-    }} />;
+    return (
+      <MainMenu
+        onBack={() => {
+          setGameMode(null);
+          onBack();
+        }}
+      />
+    );
   }
+
+  if (gameMode === 'multi') {
+    return (
+      <MultiplayerMenu
+        onBack={() => {
+          setGameMode(null);
+          onBack();
+        }}
+      />
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>BUSCAMINAS RETRO</Text>
       <Text style={styles.subtitle}>Turquoise Edition</Text>
-      
-      <TouchableOpacity 
-        style={styles.modeButton} 
+
+      <TouchableOpacity
+        style={styles.modeButton}
         onPress={() => setGameMode('single')}
       >
         <Text style={styles.buttonText}>1 JUGADOR</Text>
       </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={styles.modeButton} 
+
+      <TouchableOpacity
+        style={styles.modeButton}
         onPress={() => setGameMode('multi')}
       >
-        <Text style={styles.buttonText}>MULTIJUGADOR (próximamente)</Text>
+        <Text style={styles.buttonText}>MULTIJUGADOR</Text>
       </TouchableOpacity>
     </View>
   );

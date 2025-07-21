@@ -1,11 +1,12 @@
+// App/index.tsx
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import MainMenu from './MainMenu';
+import StartScreen from './StartScreen'; // Import StartScreen as the main entry point
 
 export default function App() {
   return (
     <View style={styles.container}>
-      <MainMenu />
+      <StartScreen /> {/* Render StartScreen as the initial component */}
     </View>
   );
 }

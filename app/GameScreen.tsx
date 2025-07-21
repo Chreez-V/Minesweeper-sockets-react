@@ -1,19 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { GameConfig } from '@/constants/gameType';
-import { createBoard, revealCell, toggleFlag, checkWinCondition } from '@/constants/gameLogic';
 import GameBoard from '@/components/GameBoard';
 import GameStatus from '@/components/GameStatus';
+import { checkWinCondition, createBoard, revealCell, toggleFlag } from '@/constants/gameLogic'; // Keep these for initial board creation/local logic if needed
+import { Cell, GameConfig, GameState } from '@/constants/gameType';
+import React, { useEffect, useState } from 'react';
+import { Alert, StyleSheet, TextInput, View } from 'react-native';
+import { Socket } from 'socket.io-client'; // Import Socket type
+
 
 interface GameScreenProps {
   gameConfig: GameConfig;
   onBack: () => void;
+  socket?: Socket; // Socket.IO client instance for multiplayer
+  roomId?: string; // Room ID for multiplayer game
+  initialBoard?: Cell[][];
+  initialGameState?: GameState;
+  playerName?: string; // Current player's name for display
 }
 
-const GameScreen: React.FC<GameScreenProps> = ({ gameConfig, onBack }) => {
-  const [board, setBoard] = useState(() => createBoard(gameConfig));
-  const [gameState, setGameState] = useState({
-    gameOver: false,
+
+const GameScreen: React.FC<GameScreenProps> = ({
+  gameConfig,
+  onBack,
+  socket,
+  roomId,
+  initialBoard,
+  initialGameState,
+}) => {
+  // Use initial board and game state if provided (for multiplayer)
+  const [board, setBoard] = useState<Cell[][]>(() => initialBoard || createBoard(gameConfig));
+  const [gameState, setGameState] = useState<GameState>(() => initialGameState || {
+     board: createBoard(gameConfig),
+     gameOver: false,
     gameWon: false,
     bombsLeft: gameConfig.bombs,
     moves: 0,
@@ -21,107 +38,126 @@ const GameScreen: React.FC<GameScreenProps> = ({ gameConfig, onBack }) => {
   const [command, setCommand] = useState('');
   const [showHelp, setShowHelp] = useState(false);
 
+  // Effect for multiplayer updates
+  useEffect(() => {
+    if (socket && roomId) {
+      // Listen for board updates from the server
+      socket.on('boardUpdate', (updatedBoard: Cell[][], updatedGameState: GameState) => {
+        setBoard(updatedBoard);
+        setGameState(updatedGameState);
+      });
+
+      // Listen for game over event from server
+      socket.on('gameOver', (gameWon: boolean) => {
+        setGameState(prevState => ({ ...prevState, gameOver: true, gameWon: gameWon }));
+      });
+
+      return () => {
+        // Clean up listeners on unmount
+        socket.off('boardUpdate');
+        socket.off('gameOver');
+      };
+    }
+  }, [socket, roomId]);
+
+  // Effect for local game over/win conditions (and for multiplayer when server signals it)
   useEffect(() => {
     if (gameState.gameOver || gameState.gameWon) {
-      const message = gameState.gameWon 
-        ? '¡Ganaste! 😎' 
+      const message = gameState.gameWon
+        ? '¡Ganaste! 😎'
         : '¡Boom! Perdiste 💥';
+
       Alert.alert('Fin del juego', message, [
         { text: 'OK', onPress: () => onBack() }
       ]);
     }
-  }, [gameState.gameOver, gameState.gameWon]);
+  }, [gameState.gameOver, gameState.gameWon, onBack]);
 
-const handleCommand = () => {
-  if (gameState.gameOver || gameState.gameWon) return;
+  const handleCommand = () => {
+    if (gameState.gameOver || gameState.gameWon) return;
 
-  const parts = command.trim().toLowerCase().split(' ');
-  const action = parts[0];
-  const coords = parts[1]?.split(',');
+    const parts = command.trim().toLowerCase().split(' ');
+    const action = parts[0];
+    const coords = parts[1]?.split(',');
 
-  // Comandos especiales
-  if (action === 'help') {
-    setShowHelp(!showHelp);
-    setCommand('');
-    return;
-  }
-
-  if (action === 'exit') {
-    onBack();
-    return;
-  }
-
-  // Validar comandos de juego
-  if (!coords || coords.length !== 2) {
-    Alert.alert('Error', 'Formato incorrecto. Usa: [acción] [fila,columna]');
-    setCommand('');
-    return;
-  }
-
-  const row = parseInt(coords[0]);
-  const col = parseInt(coords[1]);
-
-  if (isNaN(row) || isNaN(col) || 
-      row < 0 || row >= gameConfig.rows || 
-      col < 0 || col >= gameConfig.cols) {
-    Alert.alert('Error', 'Coordenadas inválidas');
-    setCommand('');
-    return;
-  }
-
-  let newBoard = [...board];
-  let newBombsLeft = gameState.bombsLeft;
-  let newGameOver = gameState.gameOver;
-  let newGameWon = gameState.gameWon;
-  let newGameState = { ...gameState }; // Creamos copia del estado
-
-  if (action === 'r' || action === 'reveal') {
-    newBoard = revealCell(board, row, col);
-    
-    if (board[row][col].isBomb) {
-      newGameState = { ...newGameState, gameOver: true };
+    // Special commands
+    if (action === 'help') {
+      setShowHelp(!showHelp);
+      setCommand('');
+      return;
     }
-  } 
-  else if (action === 'f' || action === 'flag') {
-    const result = toggleFlag(board, row, col, gameState.bombsLeft);
-    newBoard = result.newBoard;
-    newBombsLeft = result.newBombsLeft;
-  }
 
-  else {
-    Alert.alert('Error', 'Acción desconocida. Usa "reveal" o "flag"');
+    if (action === 'exit') {
+      onBack();
+      return;
+    }
+
+    // Validate game commands
+    if (!coords || coords.length !== 2) {
+      Alert.alert('Error', 'Formato incorrecto. Usa: [acción] [fila,columna]');
+      setCommand('');
+      return;
+    }
+
+    const row = parseInt(coords[0]);
+    const col = parseInt(coords[1]);
+
+    if (isNaN(row) || isNaN(col) ||
+      row < 0 || row >= gameConfig.rows ||
+      col < 0 || col >= gameConfig.cols) {
+      Alert.alert('Error', 'Coordenadas inválidas');
+      setCommand('');
+      return;
+    }
+
+    // If in multiplayer mode, emit action to server
+    if (socket && roomId) {
+      if (action === 'r' || action === 'reveal' || action === 'f' || action === 'flag') {
+        socket.emit('playerAction', roomId, action === 'r' || action === 'reveal' ? 'reveal' : 'flag', row, col);
+      } else {
+        Alert.alert('Error', 'Acción desconocida. Usa "reveal" o "flag"');
+      }
+    } else {
+      // Single player mode logic (existing logic)
+      let newBoard = [...board];
+      let newBombsLeft = gameState.bombsLeft;
+      let newGameOver = gameState.gameOver;
+      let newGameWon = gameState.gameWon;
+      let newGameState = { ...gameState };
+
+      if (action === 'r' || action === 'reveal') {
+        newBoard = revealCell(board, row, col);
+        if (board[row][col].isBomb) {
+          newGameState = { ...newGameState, gameOver: true };
+        }
+      }
+      else if (action === 'f' || action === 'flag') {
+        const result = toggleFlag(board, row, col, gameState.bombsLeft);
+        newBoard = result.newBoard;
+        newBombsLeft = result.newBombsLeft;
+      }
+      else {
+        Alert.alert('Error', 'Acción desconocida. Usa "reveal" o "flag"');
+        setCommand('');
+        return;
+      }
+
+      const isGameWon = checkWinCondition(newBoard);
+
+      setBoard(newBoard);
+      setGameState({
+        ...newGameState,
+        bombsLeft: newBombsLeft,
+        moves: gameState.moves + 1,
+        gameWon: isGameWon
+      });
+    }
+
     setCommand('');
-    return;
-  }
-
-  // Verificar condición de victoria
-  const isGameWon = checkWinCondition(newBoard);
-
-  // Actualizar estado
-  setBoard(newBoard);
-  setGameState({
-    ...newGameState,
-    bombsLeft: newBombsLeft,
-    moves: gameState.moves + 1,
-    gameWon: isGameWon
-  });
-
-  setCommand('');
-
-  // Mostrar mensaje de victoria
-  if (newGameWon) {
-    Alert.alert(
-      '¡Ganaste!', 
-      `Completaste el juego en ${gameState.moves + 1} movimientos`,
-      [{ text: 'OK', onPress: onBack }]
-    );
-  }
-};
+  };
 
   return (
-
-
-  <View style={styles.container}>
+    <View style={styles.container}>
       {!gameState.gameOver && !gameState.gameWon && (
         <View style={styles.commandContainer}>
           <TextInput
@@ -135,24 +171,21 @@ const handleCommand = () => {
         </View>
       )}
 
-    <GameStatus 
-      bombsLeft={gameState.bombsLeft} 
-      moves={gameState.moves}
-      gameOver={gameState.gameOver}
-      gameWon={gameState.gameWon}
-      onBack={onBack} 
-    />
-    
-    <View style={styles.boardContainer}>
-    <GameBoard 
-      board={board} 
-      gameOver={gameState.gameOver} 
-      gameWon={gameState.gameWon} 
-    />
-    </View>
-    
-  </View>      
+    <GameStatus
+        bombsLeft={gameState.bombsLeft}
+        moves={gameState.moves}
 
+        onBack={onBack}
+      />
+
+      <View style={styles.boardContainer}>
+        <GameBoard
+          board={board}
+          gameOver={gameState.gameOver}
+          gameWon={gameState.gameWon}
+        />
+      </View>
+    </View>
   );
 };
 
@@ -162,8 +195,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     padding: 10,
   },
-    boardContainer: {
-    flex: 1, // Esto hace que el tablero ocupe todo el espacio disponible
+  boardContainer: {
+    flex: 1,
     marginVertical: 10,
   },
   commandContainer: {

@@ -49,7 +49,6 @@ export interface RoomState {
     gameWon: boolean;
     bombsLeft: number;
     moves: number;
-    currentPlayerId: string;
   };
   hostId: string;
 }
