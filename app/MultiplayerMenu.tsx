@@ -10,7 +10,7 @@ interface MultiplayerMenuProps {
 }
 
 const MultiplayerMenu: React.FC<MultiplayerMenuProps> = ({ onBack }) => {
-  const [serverIp, setServerIp] = useState('192.168.0.115'); 
+  const [serverIp, setServerIp] = useState('10.15.53.183'); 
   const [roomId, setRoomId] = useState('');
   const [playerName, setPlayerName] = useState('Jugador');
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -295,6 +295,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontWeight: 'bold',
   },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginBottom: 20,
+    padding: 10,
+  },
+  backButtonText: {
+    color: '#0f0',
+    fontSize: 16,
+    fontFamily: 'monospace',
+  },
   section: {
     marginTop: 20,
     borderTopWidth: 1,
@@ -334,10 +344,10 @@ const styles = StyleSheet.create({
     marginVertical: 5,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: '#0f0',
+    borderColor: '#000',
   },
   selectedButton: {
-    backgroundColor: '#40E0D0',
+    backgroundColor: '#000050',
     borderColor: '#0f0',
   },
   buttonText: {

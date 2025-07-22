@@ -4,6 +4,7 @@ import { GameMode } from '@/constants/gameType';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import GameScreen from './GameScreen';
+import StartScreen from './StartScreen';
 
 // Define the props interface for MainMenu
 interface MainMenuProps {
@@ -31,6 +32,13 @@ const MainMenu: React.FC<MainMenuProps> = ({ onBack }) => {
   return (
     <ScrollView>
       <View style={styles.container}>
+
+      <TouchableOpacity
+      style={styles.backButton}
+      onPress={onBack}
+      >
+        <Text style={styles.backButtonText}>← VOLVER</Text>
+      </TouchableOpacity>
         <Text style={styles.title}>BUSCAMINAS RETRO</Text>
 
         <TouchableOpacity
@@ -107,6 +115,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     padding: 20,
     justifyContent: 'center',
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginBottom: 20,
+    padding: 10,
+  },
+  backButtonText: {
+    color: '#0f0',
+    fontSize: 16,
+    fontFamily: 'monospace',
   },
   title: {
     color: '#0f0',

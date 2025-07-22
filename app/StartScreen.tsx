@@ -35,7 +35,6 @@ const StartScreen: React.FC<StartScreenProps> = ({ onBack = () => {} }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>BUSCAMINAS RETRO</Text>
-      <Text style={styles.subtitle}>Turquoise Edition</Text>
 
       <TouchableOpacity
         style={styles.modeButton}
