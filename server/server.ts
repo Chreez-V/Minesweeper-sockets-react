@@ -19,6 +19,7 @@ interface GameRoom {
         moves: number;
     };
     hostId: string; // The socket ID of the player who created the room
+    currentPlayerTurnId: string | null;
 }
 
 const app = express();
@@ -34,7 +35,7 @@ const io = new Server(httpServer, {
 
 const gameRooms: { [roomId: string]: GameRoom } = {};
 
-// Helper to generate a unique room ID
+// Creador de ID ALEATORIO para la sala
 const generateRoomId = (): string => {
     let id: string;
     do {
@@ -46,7 +47,7 @@ const generateRoomId = (): string => {
 io.on('connection', (socket: Socket) => {
     console.log(`Client connected: ${socket.id}`);
 
-    // Event to create a new game room
+    // evento a crear una nueva sala
     socket.on('createGame', (gameMode: GameMode, customConfig?: Partial<GameConfig>, playerName: string = 'Player 1') => {
         const roomConfig = getGameConfig(gameMode, customConfig);
         const initialBoard = createBoard(roomConfig);
@@ -66,12 +67,14 @@ io.on('connection', (socket: Socket) => {
                 moves: 0,
             },
             hostId: socket.id,
+            currentPlayerTurnId: socket.id,
         };
 
         socket.join(roomId);
-        console.log(`Game room created: ${roomId} by ${playerName} (${socket.id})`);
-        io.to(socket.id).emit('gameCreated', roomId, gameRooms[roomId].board, gameRooms[roomId].gameState, gameRooms[roomId].gameConfig);
+        console.log(`Game room created: ${roomId} by ${playerName} (${socket.id}). Host has the first turn.`);
+        io.to(socket.id).emit('gameCreated', roomId, gameRooms[roomId].board, gameRooms[roomId].gameState, gameRooms[roomId].gameConfig,gameRooms[roomId].currentPlayerTurnId);
         io.to(roomId).emit('playerJoined', gameRooms[roomId].players[socket.id]);
+        io.to(roomId).emit('roomUpdate', gameRooms[roomId].players);
     });
 
     // Event to join an existing game room
@@ -85,7 +88,7 @@ io.on('connection', (socket: Socket) => {
             socket.join(roomId);
             room.players[socket.id] = { id: socket.id, name: playerName };
             console.log(`Client ${playerName} (${socket.id}) joined room: ${roomId}`);
-            io.to(socket.id).emit('gameJoined', roomId, room.board, room.gameState, room.gameConfig);
+            io.to(socket.id).emit('gameJoined', roomId, room.board, room.gameState, room.gameConfig,room.currentPlayerTurnId);
             io.to(roomId).emit('playerJoined', room.players[socket.id]);
             io.to(roomId).emit('roomUpdate', room.players); // Notify all players about the new player
         } else {
@@ -95,9 +98,16 @@ io.on('connection', (socket: Socket) => {
 
     // Event for player actions (reveal or flag)
     socket.on('playerAction', (roomId: string, action: 'reveal' | 'flag', row: number, col: number) => {
+
         const room = gameRooms[roomId];
+
         if (!room || room.gameState.gameOver || room.gameState.gameWon) {
             return; // Game is over or room doesn't exist
+        }
+          // Check if it's the current player's turn
+        if (socket.id !== room.currentPlayerTurnId) {
+            io.to(socket.id).emit('turnError', 'It is not your turn.');
+            return;
         }
 
         let newBoard = room.board.map(r => r.map(c => ({ ...c }))); // Deep copy
@@ -106,16 +116,21 @@ io.on('connection', (socket: Socket) => {
         let newGameWon: boolean = room.gameState.gameWon;
 
         if (action === 'reveal') {
+             const originalCell = newBoard[row][col];
             newBoard = revealCell(newBoard, row, col);
-            if (newBoard[row][col].isBomb) {
+            if (newBoard[row][col].isBomb && !originalCell.isRevealed) {
                 newGameOver = true;
+                newBoard = newBoard.map(r => r.map(c => c.isBomb ? { ...c, isRevealed: true } : c));
             }
         } else if (action === 'flag') {
             const result = toggleFlag(newBoard, row, col, room.gameState.bombsLeft);
             newBoard = result.newBoard;
             newBombsLeft = result.newBombsLeft;
         }
-
+ newGameWon = checkWinCondition(newBoard);
+        if (newGameWon) {
+            newGameOver = true; // Game is over if won
+        }
         newGameWon = checkWinCondition(newBoard);
 
         // Update room state
@@ -128,14 +143,25 @@ io.on('connection', (socket: Socket) => {
             gameWon: newGameWon,
         };
 
-        // Emit updated board and game state to all players in the room
-        io.to(roomId).emit('boardUpdate', room.board, room.gameState);
+        // Determine the next player's turn
+         if (!newGameOver) {
+        const playerIds = Object.keys(room.players);
+        const currentPlayerIndex = playerIds.indexOf(socket.id);
+        const nextPlayerIndex = (currentPlayerIndex + 1) % playerIds.length;
+        room.currentPlayerTurnId = playerIds[nextPlayerIndex];
+         } else{
+          // If game is over, keep the current player as the last one to act
+            room.currentPlayerTurnId = socket.id; 
+        }
+        // Emit updated board, game state, and current turn to all players in the room
+        io.to(roomId).emit('boardUpdate', room.board, room.gameState, room.currentPlayerTurnId);
 
         if (newGameOver || newGameWon) {
             io.to(roomId).emit('gameOver', room.gameState.gameWon);
             // Optionally, remove the room after some time or on explicit request
-            // delete gameRooms[roomId];
+           
         }
+   
     });
 
     // Handle player disconnection
